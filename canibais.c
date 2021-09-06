@@ -9,6 +9,10 @@ void *canibal(void *meuid);
 void *cozinheiro(int m);
 
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t cond_cozinheiro = PTHREAD_COND_INITIALIZER;
+pthread_mutex_t cond_canibal = PTHREAD_COND_INITIALIZER;
+
+int porcoes = 0;
 
 void main(argc, argv) int argc;
 char *argv[];
@@ -57,9 +61,21 @@ void *canibal(void *pi)
     while (1)
     {
         //pegar uma porção de comida e acordar o cozinheiro se as porções acabaram
+        pthread_mutex_lock(&mutex);
+        while(porcoes == 0){
+            printf("O canibal %d está esperando!\n", i);
+            pthread_cond_wait(&cond_canibal, &mutex);
+        }
 
+        porcoes--;
         printf("%d: vou comer a porcao que peguei\n", *(int *)(pi));
         sleep(10);
+
+        if(porcoes == 0){
+            printf("A comida acabou, chamando o cozinheiro\n");
+            pthread_cond_signal(&cond_cozinheiro, &mutex);
+        }
+        pthread_mutex_unlock(&mutex);
     }
 }
 
@@ -70,8 +86,14 @@ void *cozinheiro(int m)
     {
 
         //dormir enquanto tiver comida
+        pthread_mutex_lock(&mutex);
+        while(porcoes != 0){
+            pthread_cond_wait(&cond_cozinheiro, &mutex);
+        }
         printf("cozinheiro: vou cozinhar\n");
         sleep(20);
+        porcoes += m;
+        pthread_mutex_unlock(&mutex);
         //acordar os canibais
     }
 }
