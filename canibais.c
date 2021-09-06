@@ -9,10 +9,10 @@ void *canibal(void *meuid);
 void *cozinheiro(int m);
 
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t cond_cozinheiro = PTHREAD_COND_INITIALIZER;
-pthread_mutex_t cond_canibal = PTHREAD_COND_INITIALIZER;
+pthread_cond_t cond_cozinheiro = PTHREAD_COND_INITIALIZER;
+pthread_cond_t cond_canibal = PTHREAD_COND_INITIALIZER;
 
-int porcoes = 0;
+int porcoes = 0; // Variável para contar o número de porções diponíveis
 
 void main(argc, argv) int argc;
 char *argv[];
@@ -61,21 +61,19 @@ void *canibal(void *pi)
     while (1)
     {
         //pegar uma porção de comida e acordar o cozinheiro se as porções acabaram
-        pthread_mutex_lock(&mutex);
-        while(porcoes == 0){
-            printf("O canibal %d está esperando!\n", i);
-            pthread_cond_wait(&cond_canibal, &mutex);
-        }
-
+        pthread_mutex_lock(&mutex); // Região crítica
+        while (porcoes == 0)
+            pthread_cond_wait(&cond_canibal, &mutex); // Se as porções já tiverem acabado, coloca o canibal para esperar
         porcoes--;
-        printf("%d: vou comer a porcao que peguei\n", *(int *)(pi));
-        sleep(10);
 
-        if(porcoes == 0){
-            printf("A comida acabou, chamando o cozinheiro\n");
-            pthread_cond_signal(&cond_cozinheiro, &mutex);
+        if (porcoes == 0) // Se as porções acabarem, acorda o cozinheiro
+        {
+            pthread_cond_signal(&cond_cozinheiro);
         }
-        pthread_mutex_unlock(&mutex);
+        pthread_mutex_unlock(&mutex); // Região crítica
+
+        printf("Canibal %d: vou comer a porcao que peguei\nSobraram %d pedaços\n", *(int *)(pi), porcoes);
+        sleep(1);
     }
 }
 
@@ -84,16 +82,13 @@ void *cozinheiro(int m)
 
     while (1)
     {
-
-        //dormir enquanto tiver comida
-        pthread_mutex_lock(&mutex);
-        while(porcoes != 0){
+        pthread_mutex_lock(&mutex); // Região crítica
+        while (porcoes != 0)        // Enquanto ainda tiver porção, o cozinheiro dorme
             pthread_cond_wait(&cond_cozinheiro, &mutex);
-        }
-        printf("cozinheiro: vou cozinhar\n");
-        sleep(20);
-        porcoes += m;
-        pthread_mutex_unlock(&mutex);
-        //acordar os canibais
+        printf("Cozinheiro: A comida acabou, vou cozinhar\n");
+        sleep(1);
+        porcoes += m;                          // Soma as porções preparadas à variável
+        pthread_cond_broadcast(&cond_canibal); // Acorda todos os canibais
+        pthread_mutex_unlock(&mutex);          // Região crítica
     }
 }
