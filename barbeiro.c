@@ -65,7 +65,6 @@ int main()
 	int i, id[N_CLIENTES];
 
 	sem_init(&sem_cadeiras, 0, N_CADEIRAS);
-	// sem_init(&cadeira_barbeiro, 0, 1);
 	sem_init(&acorda_barbeiro, 0, 0);
 
 	for (i = 0; i < N_CLIENTES; i++)
