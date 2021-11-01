@@ -36,7 +36,7 @@ void *f_barbeiro(void *v)
 void *f_cliente(void *v)
 {
 	int id = *(int *)v;
-	sleep(id % 3);
+	sleep(id % 5);
 	if (sem_trywait(&sem_cadeiras) == 0)
 	{ //conseguiu pegar uma cadeira de espera
 		printf("Cliente %d entrou na barbearia \n", id);
@@ -66,6 +66,7 @@ int main()
 
 	sem_init(&sem_cadeiras, 0, N_CADEIRAS);
 	sem_init(&acorda_barbeiro, 0, 0);
+	sem_init(&cortou_cabelo, 0, 0);
 
 	for (i = 0; i < N_CLIENTES; i++)
 	{
